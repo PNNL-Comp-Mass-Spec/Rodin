@@ -1,5 +1,5 @@
 ################################
-# Rodin 0.1.1
+# Rodin 0.1.2
 # a Shiny app version of the tool is available at
 # https://omicstools.pnnl.gov/shiny/lipid-mini-on/
 # for help or troubleshouting contact geremy.clair@pnnl.gov
