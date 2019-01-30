@@ -15,10 +15,7 @@
 #' @author Geremy Clair
 #' @export
 #'
-
 intact.hyper<- function(X,Y){
-  if(typeof(X)!="character"){stop("X(your query) is not a column from an intact object")}
-  if(typeof(Y)!="character"){stop("Y(your universe) is not a column from an intact object")}
 
   query.factor <- factor(X)
   universe.factor <- factor(Y)
@@ -40,20 +37,22 @@ intact.hyper<- function(X,Y){
   names(contingency.matrix) <- classes
 
   hyper.results<-data.frame(matrix(NA, nrow=length(classes), ncol=8))
-  colnames(hyper.results)<- c("Classifier","Count.query","Count.universe","%.query","%.universe","Pvalue","BHadjustPvalue","fold.change")
+  colnames(hyper.results)<- c("Classifier","Count.query","Count.universe","%.query","%.universe","p-value","FDR.q-value","Fold.change")
   hyper.results$Classifier <- classes
 
   for (i in 1:length(classes))
   {
     test<- min(1-cumsum(dhyper(0:(contingency.matrix[[i]][1,1]-1),contingency.matrix[[i]][1,2],contingency.matrix[[i]][2,2],contingency.matrix[[i]][2,1])))
-    hyper.results$Pvalue[i]<-test
-    hyper.results$BHadjustPvalue[i]<-p.adjust(hyper.results$Pvalue[i], method = "BH", n=length(classes))
+    hyper.results$`p-value`[i]<-test
     hyper.results$Count.query [i]<- paste(contingency.matrix[[i]][1,1],"/",sum(query.counts[,2]), sep="")
     hyper.results$Count.universe [i]<- paste(contingency.matrix[[i]][1,2],"/",sum(universe.counts[,2]), sep="")
     hyper.results$`%.query` [i]<- query.counts[classes[i]==query.counts[,1],2]/sum(query.counts[,2])*100
     hyper.results$`%.universe`[i]<- universe.counts[classes[i]==universe.counts[,1],2]/sum(universe.counts[,2])*100
-    hyper.results$fold.change [i]<- hyper.results$`%.query`[i]/hyper.results$`%.universe`[i]
+    hyper.results$Fold.change [i]<- hyper.results$`%.query`[i]/hyper.results$`%.universe`[i]
   }
+  hyper.results$`p-value`[is.na(hyper.results$`p-value`)|hyper.results$`p-value`==TRUE|hyper.results$`p-value`>1]<-1
+  if(length(hyper.results$`p-value`)<=1){hyper.results$`FDR.q-value`<-1}else{hyper.results$`FDR.q-value`<- qvalue(hyper.results$`p-value`,lambda=0)$qvalues}
+
   hyper.results
 }
 
@@ -74,7 +73,6 @@ intact.hyper<- function(X,Y){
 #' @author Geremy Clair
 #' @export
 #'
-
 allchains.hyper<- function(X,Y){
   if(typeof(X)!="list"){stop("X(your query) is not a .allchains object")}
   if(typeof(Y)!="list"){stop("Y(your universe) is not a .allchains object")}
@@ -99,19 +97,20 @@ allchains.hyper<- function(X,Y){
   names(contingency.matrix)<- unique.query
 
   hyper.results<-data.frame(matrix(NA, nrow=length(unique.query), ncol=8))
-  colnames(hyper.results)<- c("Classifier","Count.query","Count.universe","%.query","%.universe","Pvalue","BHadjustPvalue","fold.change")
+  colnames(hyper.results)<- c("Classifier","Count.query","Count.universe","%.query","%.universe","p-value","FDR.q-value","Fold.change")
   hyper.results$Classifier <- unique.query
 
   for (i in 1:length(unique.query))
   {
-    hyper.results$Pvalue[i]<-min(1-cumsum(dhyper(0:(contingency.matrix[[i]][1,1]-1),contingency.matrix[[i]][1,2],contingency.matrix[[i]][2,2],contingency.matrix[[i]][2,1])))
-    hyper.results$BHadjustPvalue[i]<-p.adjust(hyper.results$Pvalue[i], method = "BH", n=length(unique.query))
+    hyper.results$`p-value`[i]<-min(1-cumsum(dhyper(0:(contingency.matrix[[i]][1,1]-1),contingency.matrix[[i]][1,2],contingency.matrix[[i]][2,2],contingency.matrix[[i]][2,1])))
     hyper.results$Count.query[i]<- paste(contingency.matrix[[i]][1,1],"/",query.totalchains,sep="")
     hyper.results$Count.universe[i]<- paste(contingency.matrix[[i]][1,2],"/",universe.totalchains,sep="")
     hyper.results$`%.query`[i]<- (contingency.matrix[[i]][1,1])/query.totalchains*100
     hyper.results$`%.universe`[i]<- contingency.matrix[[i]][1,2]/universe.totalchains*100
-    hyper.results$fold.change[i]<-  hyper.results$`%.query`[i]/hyper.results$`%.universe`[i]
+    hyper.results$Fold.change[i]<-  hyper.results$`%.query`[i]/hyper.results$`%.universe`[i]
   }
+  hyper.results$`p-value`[is.na(hyper.results$`p-value`)|hyper.results$`p-value`==TRUE|hyper.results$`p-value`>1]<-1
+  if(length(hyper.results$`p-value`)<=1){hyper.results$`FDR.q-value`<-1}else{hyper.results$`FDR.q-value`<- qvalue(hyper.results$`p-value`,lambda=0)$qvalues}
 
   hyper.results
 
@@ -134,7 +133,6 @@ allchains.hyper<- function(X,Y){
 #' @author Geremy Clair
 #' @export
 #'
-
 chain.hyper<- function(X,Y){
   if(typeof(X)!="list"){stop("X(your query) is not a .chain object")}
   if(typeof(Y)!="list"){stop("Y(your universe) is not a .chain object")}
@@ -162,7 +160,7 @@ chain.hyper<- function(X,Y){
 
   names(contingency.matrix)<- colnames(X)
   hyper.results<-data.frame(matrix(NA, nrow=9, ncol=8))
-  colnames(hyper.results)<- c("Classifier","Count.query","Count.universe","%.query","%.universe","Pvalue","BHadjustPvalue","fold.change")
+  colnames(hyper.results)<- c("Classifier","Count.query","Count.universe","%.query","%.universe","p-value","FDR.q-value","Fold.change")
   hyper.results$Classifier<- colnames(X[,1:9])
 
   for (i in 2:9)
@@ -171,13 +169,14 @@ chain.hyper<- function(X,Y){
     hyper.results$Count.universe[i]<- paste(sum(Y[,i]),"/",universe.totalchain,sep="")
     hyper.results$`%.query`[i]<- sum(X[,i])/query.totalchain*100
     hyper.results$`%.universe`[i]<- sum(Y[,i])/universe.totalchain*100
-    #    hyper.results$fold.change[i]<-  hyper.results$`%.query`[i]/hyper.results$`%.universe`[i]
-    if(hyper.results$`%.universe`[i]==0){hyper.results$fold.change[i]<-0}
-    else{hyper.results$fold.change[i]<-  hyper.results$`%.query`[i]/hyper.results$`%.universe`[i]}
+    if(hyper.results$`%.universe`[i]==0){hyper.results$Fold.change[i]<-0}
+    else{hyper.results$Fold.change[i]<-  hyper.results$`%.query`[i]/hyper.results$`%.universe`[i]}
 
-    hyper.results$Pvalue[i]<- min(1-cumsum(dhyper(0:(contingency.matrix[[i]][1,1]-1),contingency.matrix[[i]][1,2],contingency.matrix[[i]][2,2],contingency.matrix[[i]][2,1])))
-    hyper.results$BHadjustPvalue[i]<-p.adjust(hyper.results$Pvalue[i], method = "BH", n=4)
+    hyper.results$`p-value`[i]<- min(1-cumsum(dhyper(0:(contingency.matrix[[i]][1,1]-1),contingency.matrix[[i]][1,2],contingency.matrix[[i]][2,2],contingency.matrix[[i]][2,1])))
   }
-  hyper.results[2:9,]
+  hyper.results<-hyper.results[2:9,]
+  hyper.results$`p-value`[is.na(hyper.results$`p-value`)|hyper.results$`p-value`==TRUE|hyper.results$`p-value`>1]<-1
+  if(length(hyper.results$`p-value`)<=1){hyper.results$`FDR.q-value`<-1}else{hyper.results$`FDR.q-value`<- qvalue(hyper.results$`p-value`,lambda=0)$qvalues}
 
+  hyper.results
 }

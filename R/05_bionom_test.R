@@ -16,8 +16,6 @@
 #' @export
 #'
 intact.binom<-function(X,Y){
-  if(typeof(X)!="character"){stop("X(your query) is not a column from an intact object")}
-  if(typeof(Y)!="character"){stop("Y(your universe) is not a column from an intact object")}
 
   query.factor <- factor(X)
   universe.factor <- factor(Y)
@@ -37,7 +35,7 @@ intact.binom<-function(X,Y){
   names(param.vectors) <- classes
 
   binom.results<- data.frame(matrix(NA, nrow=length(classes), ncol=8))
-  colnames(binom.results)<- c("Classifier","Count.query","Count.universe","%.query","%.universe","Pvalue","BHadjustPvalue","fold.change")
+  colnames(binom.results)<- c("Classifier","Count.query","Count.universe","%.query","%.universe","p-value","FDR.q-value","Fold.change")
   binom.results[,1] <- classes
 
   for (i in 1:length(classes))
@@ -47,10 +45,12 @@ intact.binom<-function(X,Y){
     binom.results$Count.universe[i] <- paste(param.vectors[[i]][3],"/",param.vectors[[i]][4], sep="")
     binom.results$`%.query`[i]<-param.vectors[[i]][1]/param.vectors[[i]][2]*100
     binom.results$`%.universe`[i]<-  param.vectors[[i]][3]/param.vectors[[i]][4]*100
-    binom.results$Pvalue[i] <-test$p.value
-    binom.results$BHadjustPvalue[i]<-p.adjust(binom.results$Pvalue[i], method = "BH", n=length(classes))
-    binom.results$fold.change [i]<- binom.results$`%.query`[i]/binom.results$`%.universe`[i]
+    binom.results$`p-value`[i] <-test$p.value
+    binom.results$Fold.change [i]<- binom.results$`%.query`[i]/binom.results$`%.universe`[i]
   }
+  binom.results$`p-value`[is.na(binom.results$`p-value`)|binom.results$`p-value`==TRUE|binom.results$`p-value`>1]<-1
+  if(length(binom.results$`p-value`)<=1){binom.results$`FDR.q-value`<-1}else{binom.results$`FDR.q-value`<- qvalue(binom.results$`p-value`,lambda=0)$qvalues}
+
   binom.results
 }
 
@@ -91,7 +91,7 @@ allchains.binom<- function(X,Y){
   names(param.vectors) <- unique.query
 
   binom.results<-data.frame(matrix(NA, nrow=length(unique.query), ncol=8))
-  colnames(binom.results)<- c("Classifier","Count.query","Count.universe","%.query","%.universe","Pvalue","BHadjustPvalue","fold.change")
+  colnames(binom.results)<- c("Classifier","Count.query","Count.universe","%.query","%.universe","p-value","FDR.q-value","Fold.change")
   binom.results$Classifier <-unique.query
 
   for (i in 1:length(unique.query))
@@ -101,10 +101,12 @@ allchains.binom<- function(X,Y){
     binom.results$Count.universe[i] <- paste(param.vectors[[i]][3],"/",param.vectors[[i]][4], sep="")
     binom.results$`%.query`[i]<-param.vectors[[i]][1]/param.vectors[[i]][2]*100
     binom.results$`%.universe`[i]<-  param.vectors[[i]][3]/param.vectors[[i]][4]*100
-    binom.results$Pvalue[i] <-test$p.value
-    binom.results$BHadjustPvalue[i]<-p.adjust(binom.results$Pvalue[i], method = "BH", n=length(unique.query))
-    binom.results$fold.change [i]<- binom.results$`%.query`[i]/binom.results$`%.universe`[i]
+    binom.results$`p-value`[i] <-test$p.value
+    binom.results$Fold.change [i]<- binom.results$`%.query`[i]/binom.results$`%.universe`[i]
   }
+  binom.results$`p-value`[is.na(binom.results$`p-value`)|binom.results$`p-value`==TRUE|binom.results$`p-value`>1]<-1
+  if(length(binom.results$`p-value`)<=1){binom.results$`FDR.q-value`<-1}else{binom.results$`FDR.q-value`<- qvalue(binom.results$`p-value`,lambda=0)$qvalues}
+
   binom.results
 }
 
@@ -146,7 +148,7 @@ chain.binom<- function(X,Y){
 
   names(param.vectors)<- colnames(X[,1:9])
   binom.results<-data.frame(matrix(NA, nrow=9, ncol=8))
-  colnames(binom.results)<- c("Classifier","Count.query","Count.universe","%.query","%.universe","Pvalue","BHadjustPvalue","fold.change")
+  colnames(binom.results)<- c("Classifier","Count.query","Count.universe","%.query","%.universe","p-value","FDR.q-value","Fold.change")
   binom.results$Classifier<- colnames(X[,1:9])
 
   for (i in 2:9)
@@ -158,12 +160,15 @@ chain.binom<- function(X,Y){
       binom.results$Count.universe[i] <- paste(param.vectors[[i]][3],"/",param.vectors[[i]][4], sep="")
       binom.results$`%.query`[i]<-param.vectors[[i]][1]/param.vectors[[i]][2]*100
       binom.results$`%.universe`[i]<-  param.vectors[[i]][3]/param.vectors[[i]][4]*100
-      binom.results$Pvalue[i] <-test$p.value
-      binom.results$BHadjustPvalue[i]<-p.adjust(binom.results$Pvalue[i], method = "BH", n=4)
-      if(binom.results$`%.universe`[i]==0){binom.results$fold.change[i]<-0}
-      else{binom.results$fold.change[i]<-  binom.results$`%.query`[i]/binom.results$`%.universe`[i]}
+      binom.results$`p-value`[i] <-test$p.value
+      if(binom.results$`%.universe`[i]==0){binom.results$Fold.change[i]<-0}
+      else{binom.results$Fold.change[i]<-  binom.results$`%.query`[i]/binom.results$`%.universe`[i]}
 
      }
   }
-  binom.results[2:9,]
+  binom.results<-binom.results[2:9,]
+  binom.results$`p-value`[is.na(binom.results$`p-value`)|binom.results$`p-value`==TRUE|binom.results$`p-value`>1]<-1
+  if(length(binom.results$`p-value`)<=1){binom.results$`FDR.q-value`<-1}else{binom.results$`FDR.q-value`<- qvalue(binom.results$`p-value`,lambda=0)$qvalues}
+
+  binom.results
 }

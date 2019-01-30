@@ -14,10 +14,8 @@
 #'
 #' @author Geremy Clair
 #' @export
-
+#'
 intact.fisher<- function(X,Y){
-  if(typeof(X)!="character"){stop("X(your query) is not a column from an intact object")}
-  if(typeof(Y)!="character"){stop("Y(your universe) is not a column from an intact object")}
 
   query.factor <- factor(X)
   universe.factor <- factor(Y)
@@ -39,20 +37,22 @@ intact.fisher<- function(X,Y){
   names(contingency.matrix) <- classes
 
   fisher.results<-data.frame(matrix(NA, nrow=length(classes), ncol=8))
-  colnames(fisher.results)<- c("Classifier","Count.query","Count.universe","%.query","%.universe","Pvalue","BHadjustPvalue","fold.change")
+  colnames(fisher.results)<- c("Classifier","Count.query","Count.universe","%.query","%.universe","p-value", "FDR.q-value","Fold.change")
   fisher.results$Classifier <- classes
 
   for (i in 1:length(classes))
   {
     test<-fisher.test(contingency.matrix[[i]])
-    fisher.results$Pvalue[i]<-test$p.value
-    fisher.results$BHadjustPvalue[i]<-p.adjust(fisher.results$Pvalue[i], method = "BH", n=length(classes))
+    fisher.results$`p-value` [i]<-test$p.value
     fisher.results$Count.query [i]<- paste(contingency.matrix[[i]][1,1],"/",sum(query.counts[,2]), sep="")
     fisher.results$Count.universe [i]<- paste(contingency.matrix[[i]][1,2],"/",sum(universe.counts[,2]), sep="")
     fisher.results$`%.query` [i]<- query.counts[classes[i]==query.counts[,1],2]/sum(query.counts[,2])*100
     fisher.results$`%.universe`[i]<- universe.counts[classes[i]==universe.counts[,1],2]/sum(universe.counts[,2])*100
-    fisher.results$fold.change [i]<- fisher.results$`%.query`[i]/fisher.results$`%.universe`[i]
+    fisher.results$Fold.change [i]<- fisher.results$`%.query`[i]/fisher.results$`%.universe`[i]
   }
+  fisher.results$`p-value`[is.na(fisher.results$`p-value`)|fisher.results$`p-value`==TRUE|fisher.results$`p-value`>1]<-1
+  if(length(fisher.results$`p-value`)<=1){fisher.results$`FDR.q-value`<-1}else{fisher.results$`FDR.q-value`<- qvalue(fisher.results$`p-value`,lambda=0)$qvalues}
+
   fisher.results
 }
 
@@ -97,23 +97,23 @@ allchains.fisher<- function(X,Y){
   names(contingency.matrix)<- unique.query
 
   fisher.results<-data.frame(matrix(NA, nrow=length(unique.query), ncol=8))
-  colnames(fisher.results)<- c("Classifier","Count.query","Count.universe","%.query","%.universe","Pvalue","BHadjustPvalue","fold.change")
+  colnames(fisher.results)<- c("Classifier","Count.query","Count.universe","%.query","%.universe","p-value","FDR.q-value","Fold.change")
   fisher.results$Classifier <- unique.query
 
   for (i in 1:length(unique.query))
   {
     test<-fisher.test(contingency.matrix[[i]])
-    fisher.results$Pvalue[i]<-test$p.value
-    fisher.results$BHadjustPvalue[i]<-p.adjust(fisher.results$Pvalue[i], method = "BH", n=length(unique.query))
+    fisher.results$`p-value`[i]<-test$p.value
     fisher.results$Count.query[i]<- paste(contingency.matrix[[i]][1,1],"/",query.totalchains,sep="")
     fisher.results$Count.universe[i]<- paste(contingency.matrix[[i]][1,2],"/",universe.totalchains,sep="")
     fisher.results$`%.query`[i]<- (contingency.matrix[[i]][1,1])/query.totalchains*100
     fisher.results$`%.universe`[i]<- contingency.matrix[[i]][1,2]/universe.totalchains*100
-    fisher.results$fold.change[i]<-  fisher.results$`%.query`[i]/fisher.results$`%.universe`[i]
+    fisher.results$Fold.change[i]<-  fisher.results$`%.query`[i]/fisher.results$`%.universe`[i]
   }
+  fisher.results$`p-value`[is.na(fisher.results$`p-value`)|fisher.results$`p-value`==TRUE|fisher.results$`p-value`>1]<-1
+  if(length(fisher.results$`p-value`)<=1){fisher.results$`FDR.q-value`<-1}else{fisher.results$`FDR.q-value`<- qvalue(fisher.results$`p-value`,lambda=0)$qvalues}
 
   fisher.results
-
 }
 
 #' chain.fisher()
@@ -160,7 +160,7 @@ chain.fisher<- function(X,Y){
 
   names(contingency.matrix)<- colnames(X)
   fisher.results<-data.frame(matrix(NA, nrow=9, ncol=8))
-  colnames(fisher.results)<- c("Classifier","Count.query","Count.universe","%.query","%.universe","Pvalue","BHadjustPvalue","fold.change")
+  colnames(fisher.results)<- c("Classifier","Count.query","Count.universe","%.query","%.universe","p-value","FDR.q-value","Fold.change")
   fisher.results$Classifier<- colnames(X[,1:9])
 
   for (i in 2:9)
@@ -170,12 +170,13 @@ chain.fisher<- function(X,Y){
     fisher.results$`%.query`[i]<- sum(X[,i])/query.totalchain*100
     fisher.results$`%.universe`[i]<- sum(Y[,i])/universe.totalchain*100
     test<-fisher.test(contingency.matrix[[i]])
-    fisher.results$Pvalue[i]<-test$p.value
-    fisher.results$BHadjustPvalue[i]<-p.adjust(fisher.results$Pvalue[i], method = "BH", n=4)
-    if(fisher.results$`%.universe`[i]==0){fisher.results$fold.change[i]<-0}
-    else{fisher.results$fold.change[i]<-  fisher.results$`%.query`[i]/fisher.results$`%.universe`[i]}
-
-
+    fisher.results$`p-value`[i]<-test$p.value
+    if(fisher.results$`%.universe`[i]==0){fisher.results$Fold.change[i]<-0}
+    else{fisher.results$Fold.change[i]<-  fisher.results$`%.query`[i]/fisher.results$`%.universe`[i]}
   }
-  fisher.results[2:9,]
+
+  fisher.results<-fisher.results[2:9,]
+  fisher.results$`p-value`[is.na(fisher.results$`p-value`)|fisher.results$`p-value`==TRUE|fisher.results$`p-value`>1]<-1
+  if(length(fisher.results$`p-value`)<=1){fisher.results$`FDR.q-value`<-1}else{fisher.results$`FDR.q-value`<- qvalue(fisher.results$`p-value`,lambda=0)$qvalues}
+  fisher.results
 }

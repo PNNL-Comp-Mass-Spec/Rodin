@@ -17,8 +17,6 @@
 #'
 
 intact.EASE<- function(X,Y){
-  if(typeof(X)!="character"){stop("X(your query) is not a column from an intact object")}
-  if(typeof(Y)!="character"){stop("Y(your universe) is not a column from an intact object")}
 
   query.factor <- factor(X)
   universe.factor <- factor(Y)
@@ -40,21 +38,22 @@ intact.EASE<- function(X,Y){
   names(contingency.matrix) <- classes
 
   EASE.results<-data.frame(matrix(NA, nrow=length(classes), ncol=8))
-  colnames(EASE.results)<- c("Classifier","Count.query","Count.universe","%.query","%.universe","Pvalue","BHadjustPvalue","fold.change")
+  colnames(EASE.results)<- c("Classifier","Count.query","Count.universe","%.query","%.universe","p-value", "FDR.q-value","Fold.change")
   EASE.results$Classifier <- classes
 
   for (i in 1:length(classes))
   {
     test<-fisher.test(contingency.matrix[[i]])
-    EASE.results$Pvalue[i]<-test$p.value
-    EASE.results$BHadjustPvalue[i]<-p.adjust(EASE.results$Pvalue[i], method = "BH", n=length(classes))
+    EASE.results$`p-value`[i]<-test$p.value
     EASE.results$Count.query [i]<- paste((contingency.matrix[[i]][1,1]+1),"/",sum(query.counts[,2]), sep="")
     EASE.results$Count.universe [i]<- paste(contingency.matrix[[i]][1,2],"/",sum(universe.counts[,2]), sep="")
     EASE.results$`%.query` [i]<- query.counts[classes[i]==query.counts[,1],2]/sum(query.counts[,2])*100
     EASE.results$`%.universe`[i]<- universe.counts[classes[i]==universe.counts[,1],2]/sum(universe.counts[,2])*100
-    EASE.results$fold.change [i]<- EASE.results$`%.query`[i]/EASE.results$`%.universe`[i]
-
+    EASE.results$Fold.change [i]<- EASE.results$`%.query`[i]/EASE.results$`%.universe`[i]
   }
+  EASE.results$`p-value`[is.na(EASE.results$`p-value`)|EASE.results$`p-value`==TRUE|EASE.results$`p-value`>1]<-1
+  if(length(EASE.results$`p-value`)<=1){EASE.results$`FDR.q-value`<-1}else{EASE.results$`FDR.q-value`<- qvalue(EASE.results$`p-value`,lambda=0)$qvalues}
+
   EASE.results
 }
 #' allchains.EASE()
@@ -98,21 +97,21 @@ allchains.EASE<- function(X,Y){
   names(contingency.matrix)<- unique.query
 
   EASE.results<-data.frame(matrix(NA, nrow=length(unique.query), ncol=8))
-  colnames(EASE.results)<- c("Classifier","Count.query","Count.universe","%.query","%.universe","Pvalue","BHadjustPvalue","fold.change")
+  colnames(EASE.results)<- c("Classifier","Count.query","Count.universe","%.query","%.universe","p-value", "FDR.q-value","Fold.change")
   EASE.results$Classifier <- unique.query
 
   for (i in 1:length(unique.query))
   {
     test<-fisher.test(contingency.matrix[[i]])
-    EASE.results$Pvalue[i]<-test$p.value
-    EASE.results$BHadjustPvalue[i]<-p.adjust(EASE.results$Pvalue[i], method = "BH", n=length(unique.query))
+    EASE.results$`p-value`[i]<-test$p.value
     EASE.results$Count.query[i]<- paste(contingency.matrix[[i]][1,1]+1,"/",query.totalchains,sep="")
     EASE.results$Count.universe[i]<- paste(contingency.matrix[[i]][1,2],"/",universe.totalchains,sep="")
     EASE.results$`%.query`[i]<- (contingency.matrix[[i]][1,1]+1)/query.totalchains*100
     EASE.results$`%.universe`[i]<- contingency.matrix[[i]][1,2]/universe.totalchains*100
-    EASE.results$fold.change[i]<-  EASE.results$`%.query`[i]/EASE.results$`%.universe`[i]
+    EASE.results$Fold.change[i]<-  EASE.results$`%.query`[i]/EASE.results$`%.universe`[i]
   }
-
+  EASE.results$`p-value`[is.na(EASE.results$`p-value`)|EASE.results$`p-value`==TRUE|EASE.results$`p-value`>1]<-1
+  if(length(EASE.results$`p-value`)<=1){EASE.results$`FDR.q-value`<-1}else{EASE.results$`FDR.q-value`<- qvalue(EASE.results$`p-value`,lambda=0)$qvalues}
   EASE.results
 
 }
@@ -161,7 +160,7 @@ chain.EASE<- function(X,Y){
 
   names(contingency.matrix)<- colnames(X)
   EASE.results<-data.frame(matrix(NA, nrow=9, ncol=8))
-  colnames(EASE.results)<- c("Classifier","Count.query","Count.universe","%.query","%.universe","Pvalue","BHadjustPvalue","fold.change")
+  colnames(EASE.results)<- c("Classifier","Count.query","Count.universe","%.query","%.universe","p-value", "FDR.q-value","Fold.change")
   EASE.results$Classifier<- colnames(X[,1:9])
 
   for (i in 2:9)
@@ -170,20 +169,20 @@ chain.EASE<- function(X,Y){
     EASE.results$Count.universe[i]<- paste(sum(Y[,i]),"/",universe.totalchain,sep="")
     EASE.results$`%.query`[i]<- sum(X[,i])/query.totalchain*100
     EASE.results$`%.universe`[i]<- sum(Y[,i])/universe.totalchain*100
-   # EASE.results$fold.change[i]<-  EASE.results$`%.query`[i]/EASE.results$`%.universe`[i]
-    if(EASE.results$`%.universe`[i]==0){EASE.results$fold.change[i]<-0}
-    else{EASE.results$fold.change[i]<-  EASE.results$`%.query`[i]/EASE.results$`%.universe`[i]}
+    if(EASE.results$`%.universe`[i]==0){EASE.results$Fold.change[i]<-0}
+    else{EASE.results$Fold.change[i]<-  EASE.results$`%.query`[i]/EASE.results$`%.universe`[i]}
 
     if(contingency.matrix[[i]][1,1]>-1){
       test<-fisher.test(contingency.matrix[[i]])
-      EASE.results$Pvalue[i]<-test$p.value
-      EASE.results$BHadjustPvalue[i]<-p.adjust(EASE.results$Pvalue[i], method = "BH", n=4)
+      EASE.results$`p-value`[i]<-test$p.value
     }else{
-      EASE.results$Pvalue[i]<-paste("No", EASE.results$Classifier[i], "in query")
-      EASE.results$BHadjustPvalue[i]<- paste("No", EASE.results$Classifier[i],"in query")
+      EASE.results$`p-value`[i]<-1
     }
   }
-  EASE.results[2:9,]
+  EASE.results<-EASE.results[2:9,]
+  EASE.results$`p-value`[is.na(EASE.results$`p-value`)|EASE.results$`p-value`==TRUE|EASE.results$`p-value`>1]<-1
+  if(length(EASE.results$`p-value`)<=1){EASE.results$`FDR.q-value`<-1}else{EASE.results$`FDR.q-value`<- qvalue(EASE.results$`p-value`,lambda=0)$qvalues}
+  EASE.results
 }
 
 

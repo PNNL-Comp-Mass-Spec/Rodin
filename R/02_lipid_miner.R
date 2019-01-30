@@ -71,7 +71,6 @@ lipid.miner <- function(X,name="yourname", TGcollapse.rm=TRUE, output.list=FALSE
   Glycerophospholipids<-c("PE", "PC", "PS", "PI", "PG", "PA", "CL","PIP","PIP2", "PIP3")
   Glycerolipids<- c("TG","DG","MG","DGDG","MGDG","SQMG", "SQDG", "DGTS/A")
 
-
   #Fill the category section
   df$Category<- rep("Uncategorized", nrow(df))
   df$Category[df$`Main class` %in% Sphingolipids]<-"Sphingolipid"
@@ -115,11 +114,10 @@ lipid.miner <- function(X,name="yourname", TGcollapse.rm=TRUE, output.list=FALSE
   chains.list<-lapply(chains.list, `length<-`,4)
   chains.df <- data.frame(matrix(unlist(chains.list), nrow=length(X),byrow=T))
 
-
-  df$`Chain 1`<- chains.df$X1
-  df$`Chain 2`<- chains.df$X2
-  df$`Chain 3`<- chains.df$X3
-  df$`Chain 4`<- chains.df$X4
+  df$`Chain 1`<- as.character(t(chains.df$X1))
+  df$`Chain 2`<- as.character(t(chains.df$X2))
+  df$`Chain 3`<- as.character(t(chains.df$X3))
+  df$`Chain 4`<- as.character(t(chains.df$X4))
 
   #REMOVE 0:0 in DG and MG in df
   DGMG<-c("DG","MG")
@@ -127,6 +125,23 @@ lipid.miner <- function(X,name="yourname", TGcollapse.rm=TRUE, output.list=FALSE
   df$`Chain 2`[grepl("^0\\:0",df$`Chain 2`)&df$`Main class`%in% DGMG]<-NA
   df$`Chain 3`[grepl("^0\\:0",df$`Chain 3`)&df$`Main class`%in% DGMG]<-NA
   df$`Chain 4`[grepl("^0\\:0",df$`Chain 3`)&df$`Main class`%in% DGMG]<-NA
+
+  #################################################take care of the lyso removal?
+  Lyso<-rep(0,length = nrow(df))
+  for(i in 1:nrow(df)){
+  if("0:0" %in% df[i,7:10]){
+    Lyso[i]<-1
+    }
+  }
+
+  #remove the 0:0 from df
+  df$`Chain 1`[grepl("^0\\:0",df$`Chain 1`)]<-NA
+  df$`Chain 2`[grepl("^0\\:0",df$`Chain 2`)]<-NA
+  df$`Chain 3`[grepl("^0\\:0",df$`Chain 3`)]<-NA
+  df$`Chain 4`[grepl("^0\\:0",df$`Chain 3`)]<-NA
+
+  #add the number in Lyso
+  df$Lyso<-Lyso
 
   #Bring this back in the chain object
   chains<-paste(df$`Chain 1`,"/",df$`Chain 2`,"/",df$`Chain 3`,"/",df$`Chain 4`, sep="")
@@ -196,7 +211,6 @@ lipid.miner <- function(X,name="yourname", TGcollapse.rm=TRUE, output.list=FALSE
   chains.df$X3<-as.numeric(df$`DB Chain3`)
   chains.df$X4<-as.numeric(df$`DB Chain4`)
 
-
   df$`Double Bonds`<- rowSums (chains.df, na.rm = T)
 
   remove(chains.df)
@@ -235,23 +249,14 @@ lipid.miner <- function(X,name="yourname", TGcollapse.rm=TRUE, output.list=FALSE
   df$`Sub class`<- paste(df$`Main class`,"(",subclass.list,sep="")
 
   #Lyso (in the subclass and Lyso column)
-  noNA<-data.frame(df[,11:18])
-  noNA[is.na(noNA)]<- 123456789
-
-  df[noNA$N.Carbon.Chain1==0 & noNA$`DB.Chain1`==0,4]<-paste("L",df[noNA$N.Carbon.Chain1==0 & noNA$`DB.Chain1`==0,4],sep="")
-  df[noNA$N.Carbon.Chain2==0 & noNA$`DB.Chain2`==0,4]<-paste("L",df[noNA$N.Carbon.Chain2==0 & noNA$`DB.Chain2`==0,4],sep="")
-  df[noNA$N.Carbon.Chain3==0 & noNA$`DB.Chain3`==0,4]<-paste("L",df[noNA$N.Carbon.Chain3==0 & noNA$`DB.Chain3`==0,4],sep="")
-  df[noNA$N.Carbon.Chain4==0 & noNA$`DB.Chain4`==0,4]<-paste("L",df[noNA$N.Carbon.Chain4==0 & noNA$`DB.Chain4`==0,4],sep="")
-
-  remove(noNA)
+  df[df$Lyso>0,4]<-paste0("L",df[df$Lyso>0,4])
 
   # Chains, Calculate the chains properties
   #this can probably be simplified for faster calculation
 
-  chains.df<-cbind(df$Lipid,df[,7:27])
-  chains.df[,6:13]<-df[,11:18]
+  chains.df<-cbind(df$Lipid,df[,7:18],df[,20:27])
   chains.df[,6:13][is.na(chains.df[,6:13])]<-"-1"
-  chains.df[,14:22]<-0
+  chains.df[,14:21]<-0
   colnames(chains.df)[1]<-"Lipid"
 
   for(i in 6:13){
@@ -259,59 +264,26 @@ lipid.miner <- function(X,name="yourname", TGcollapse.rm=TRUE, output.list=FALSE
   }
 
   for (i in 1:nrow(chains.df)){
-    if(chains.df$`N Carbon Chain1`[i]==0){chains.df$Lyso[i]<-chains.df$Lyso[i]+1}
-    if(chains.df$`N Carbon Chain2`[i]==0){chains.df$Lyso[i]<-chains.df$Lyso[i]+1}
-    if(chains.df$`N Carbon Chain3`[i]==0){chains.df$Lyso[i]<-chains.df$Lyso[i]+1}
-    if(chains.df$`N Carbon Chain4`[i]==0){chains.df$Lyso[i]<-chains.df$Lyso[i]+1}
-    if(chains.df$`N Carbon Chain1`[i]>=1 && chains.df$`N Carbon Chain1`[i]<=5 ){chains.df$SCFA[i]<-chains.df$SCFA[i]+1}
-    if(chains.df$`N Carbon Chain2`[i]>=1 && chains.df$`N Carbon Chain2`[i]<=5 ){chains.df$SCFA[i]<-chains.df$SCFA[i]+1}
-    if(chains.df$`N Carbon Chain3`[i]>=1 && chains.df$`N Carbon Chain3`[i]<=5 ){chains.df$SCFA[i]<-chains.df$SCFA[i]+1}
-    if(chains.df$`N Carbon Chain4`[i]>=1 && chains.df$`N Carbon Chain4`[i]<=5 ){chains.df$SCFA[i]<-chains.df$SCFA[i]+1}
-    if(chains.df$`N Carbon Chain1`[i]>5 && chains.df$`N Carbon Chain1`[i]<=12 ){chains.df$MCFA[i]<-chains.df$MCFA[i]+1}
-    if(chains.df$`N Carbon Chain2`[i]>5 && chains.df$`N Carbon Chain2`[i]<=12 ){chains.df$MCFA[i]<-chains.df$MCFA[i]+1}
-    if(chains.df$`N Carbon Chain3`[i]>5 && chains.df$`N Carbon Chain3`[i]<=12 ){chains.df$MCFA[i]<-chains.df$MCFA[i]+1}
-    if(chains.df$`N Carbon Chain4`[i]>5 && chains.df$`N Carbon Chain4`[i]<=12 ){chains.df$MCFA[i]<-chains.df$MCFA[i]+1}
-    if(chains.df$`N Carbon Chain1`[i]>12 && chains.df$`N Carbon Chain1`[i]<=21 ){chains.df$LCFA[i]<-chains.df$LCFA[i]+1}
-    if(chains.df$`N Carbon Chain2`[i]>12 && chains.df$`N Carbon Chain2`[i]<=21 ){chains.df$LCFA[i]<-chains.df$LCFA[i]+1}
-    if(chains.df$`N Carbon Chain3`[i]>12 && chains.df$`N Carbon Chain3`[i]<=21 ){chains.df$LCFA[i]<-chains.df$LCFA[i]+1}
-    if(chains.df$`N Carbon Chain4`[i]>12 && chains.df$`N Carbon Chain4`[i]<=21 ){chains.df$LCFA[i]<-chains.df$LCFA[i]+1}
-    if(chains.df$`N Carbon Chain1`[i]>=22){chains.df$VLCFA[i]<-chains.df$VLCFA[i]+1}
-    if(chains.df$`N Carbon Chain2`[i]>=22){chains.df$VLCFA[i]<-chains.df$VLCFA[i]+1}
-    if(chains.df$`N Carbon Chain3`[i]>=22){chains.df$VLCFA[i]<-chains.df$VLCFA[i]+1}
-    if(chains.df$`N Carbon Chain4`[i]>=22){chains.df$VLCFA[i]<-chains.df$VLCFA[i]+1}
-    if(chains.df$`DB Chain1`[i]==0){chains.df$Saturated[i]<-chains.df$Saturated[i]+1}
-    if(chains.df$`DB Chain2`[i]==0){chains.df$Saturated[i]<-chains.df$Saturated[i]+1}
-    if(chains.df$`DB Chain3`[i]==0){chains.df$Saturated[i]<-chains.df$Saturated[i]+1}
-    if(chains.df$`DB Chain4`[i]==0){chains.df$Saturated[i]<-chains.df$Saturated[i]+1}
-    if(chains.df$`DB Chain1`[i]==1){chains.df$Monounsaturated[i]<-chains.df$Monounsaturated[i]+1}
-    if(chains.df$`DB Chain2`[i]==1){chains.df$Monounsaturated[i]<-chains.df$Monounsaturated[i]+1}
-    if(chains.df$`DB Chain3`[i]==1){chains.df$Monounsaturated[i]<-chains.df$Monounsaturated[i]+1}
-    if(chains.df$`DB Chain4`[i]==1){chains.df$Monounsaturated[i]<-chains.df$Monounsaturated[i]+1}
-    if(chains.df$`DB Chain1`[i]==2){chains.df$Diunsaturated[i]<-chains.df$Diunsaturated[i]+1}
-    if(chains.df$`DB Chain2`[i]==2){chains.df$Diunsaturated[i]<-chains.df$Diunsaturated[i]+1}
-    if(chains.df$`DB Chain3`[i]==2){chains.df$Diunsaturated[i]<-chains.df$Diunsaturated[i]+1}
-    if(chains.df$`DB Chain4`[i]==2){chains.df$Diunsaturated[i]<-chains.df$Diunsaturated[i]+1}
-    if(chains.df$`DB Chain1`[i]>=3){chains.df$Polyunsaturated[i]<-chains.df$Polyunsaturated[i]+1}
-    if(chains.df$`DB Chain2`[i]>=3){chains.df$Polyunsaturated[i]<-chains.df$Polyunsaturated[i]+1}
-    if(chains.df$`DB Chain3`[i]>=3){chains.df$Polyunsaturated[i]<-chains.df$Polyunsaturated[i]+1}
-    if(chains.df$`DB Chain4`[i]>=3){chains.df$Polyunsaturated[i]<-chains.df$Polyunsaturated[i]+1}
+    chains.df$SCFA[i]<-sum(chains.df[i,6:9]>=1 & chains.df[i,6:9]<=5)
+    chains.df$MCFA[i]<-sum(chains.df[i,6:9]>5 & chains.df[i,6:9]<=12)
+    chains.df$LCFA[i]<-sum(chains.df[i,6:9]>12 & chains.df[i,6:9]<=21)
+    chains.df$VLCFA[i]<-sum(chains.df[i,6:9]>=22)
+    chains.df$Saturated[i]<-sum(chains.df[i,10:13]==0)
+    chains.df$Monounsaturated[i]<-sum(chains.df[i,10:13]==1)
+    chains.df$Diunsaturated[i]<-sum(chains.df[i,10:13]==2)
+    chains.df$Polyunsaturated[i]<-sum(chains.df[i,10:13]>=3)
   }
-  df[,19:27]<-chains.df[,14:22]
 
-
+  df[,20:27]<-chains.df[,14:21]
 
   if(TGcollapse.rm==TRUE){
     #remove the chains that are from collapsed TGs
-    ################################################################
-    ###ADD AN OPTION BUTTON HERE
-    ################################################################
     chains.df<- chains.df[!(chains.df$`N Carbon Chain2`==-1&df$`Main class`=="TG"),]
   }
 
   chains.df[chains.df==-1]<- NA
 
   ################################################################
-
   #create the last object that combine the existing chains in a vector
   allchains<- data.frame(matrix(nrow = 4*nrow(chains.df), ncol=2))
   allchains[,1]<- c(paste(chains.df$Lipid,"_Chain1",sep=""),paste(chains.df$Lipid,"_Chain2",sep=""),paste(chains.df$Lipid,"_Chain3",sep=""),paste(chains.df$Lipid,"_Chain4",sep=""))
@@ -320,7 +292,7 @@ lipid.miner <- function(X,name="yourname", TGcollapse.rm=TRUE, output.list=FALSE
   allchains<- allchains[!is.na(allchains$Chain),]
 
   #finalize the object chains
-  chains.df<- cbind(chains.df[,1],chains.df[,15:22])
+  chains.df<- cbind(chains.df[,1],chains.df[,14:21])
   colnames(chains.df)[1]<- "Lipid"
 
   #if unknown main.class/subclass replace with Uncategorized

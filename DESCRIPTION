@@ -1,7 +1,7 @@
 Package: Rodin
 Type: Package
 Title: Lipid Mini-on
-Version: 0.1.0
+Version: 0.1.2
 Author: Geremy Clair
 Maintainer: Geremy Clair<geremy.clair@pnnl.gov>
 Description: Lipid mining and ontology.    This packages uses text mining to create ontology    bins and perform lipid enrichement analysis.
@@ -9,6 +9,6 @@ License: BSD 2-Clause License
 Encoding: UTF-8
 LazyData: true
 RoxygenNote: 6.0.1
-Depends: ggplot2, gridExtra,visNetwork,R(>= 3.4.0)
+Depends: ggplot2, gridExtra,visNetwork,qvalue,R(>= 3.4.0)
 NeedsCompilation: no
 Packaged: 2018-08-13 23:15:34 UTC; clai036
