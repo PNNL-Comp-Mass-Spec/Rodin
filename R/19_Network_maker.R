@@ -133,7 +133,9 @@ lipid_network_maker<-function(X,Y,p=1,q=1,name="network"){
   #reduce the edge table to the two sides of the edge
   X.filtered<-X[,c(1,3)]
   #filter the result table of a test based on p and q
-  if("Fold.change" %in% colnames(Y)){table.filtered<-Y[Y$Fold.change>=1,]}
+  if("Fold.change" %in% colnames(Y)){table.filtered<-Y[Y$Fold.change>=1,]}else{
+    table.filtered<-Y
+  }
   table.filtered<-table.filtered[table.filtered$`p-value`<=p,]
   table.filtered<-table.filtered[table.filtered$`FDR.q-value`<=q,]
 
