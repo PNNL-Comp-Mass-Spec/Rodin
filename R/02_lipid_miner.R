@@ -202,17 +202,28 @@ lipid.miner <- function(X,name="yourname", TGcollapse.rm=TRUE, output.list=FALSE
   suppressWarnings(chains.df$X2<-as.numeric(df$`N Carbon Chain2`))
   suppressWarnings(chains.df$X3<-as.numeric(df$`N Carbon Chain3`))
   suppressWarnings(chains.df$X4<-as.numeric(df$`N Carbon Chain4`))
-
+  
+  chains.df$X1[is.na(chains.df$X1)]<-0
+  chains.df$X2[is.na(chains.df$X2)]<-0
+  chains.df$X3[is.na(chains.df$X3)]<-0
+  chains.df$X4[is.na(chains.df$X4)]<-0
+  
+  
   df$`Total Number of Carbon`<- rowSums (chains.df, na.rm = T)
-
+  
   #Total number of DB
-  chains.df$X1<-as.numeric(df$`DB Chain1`)
-  chains.df$X2<-as.numeric(df$`DB Chain2`)
-  chains.df$X3<-as.numeric(df$`DB Chain3`)
-  chains.df$X4<-as.numeric(df$`DB Chain4`)
-
+  suppressWarnings(chains.df$X1<-as.numeric(df$`DB Chain1`))
+  suppressWarnings(chains.df$X2<-as.numeric(df$`DB Chain2`))
+  suppressWarnings(chains.df$X3<-as.numeric(df$`DB Chain3`))
+  suppressWarnings(chains.df$X4<-as.numeric(df$`DB Chain4`))
+  
+  chains.df$X1[is.na(chains.df$X1)]<-0
+  chains.df$X2[is.na(chains.df$X2)]<-0
+  chains.df$X3[is.na(chains.df$X3)]<-0
+  chains.df$X4[is.na(chains.df$X4)]<-0
+  
   df$`Double Bonds`<- rowSums (chains.df, na.rm = T)
-
+  
   remove(chains.df)
 
   #comupte the subclass by minning between the parenthesis and adding the subclass to the main class
