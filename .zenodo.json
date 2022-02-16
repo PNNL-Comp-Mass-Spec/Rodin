@@ -1,0 +1,16 @@
+{
+   "description":"<p>R package used by Lipid Mini-On to create ontology bins and perform lipid enrichment analysis.</p>",
+
+   "license":"BSD-2-Clause",
+
+   "keywords":[
+      "Lipidomics",
+      "Enrichment"
+   ],
+
+   "communities":[
+      {
+         "identifier":"pnnl"
+      }
+   ]
+}
