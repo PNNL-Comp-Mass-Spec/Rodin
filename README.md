@@ -1,6 +1,6 @@
 # Rodin
 
-Rodin is an R package used by Lipid Mini-On to create ontology bins and perform lipid enrichment analysis.
+Rodin is an R package used by [Lipid Mini-On](https://github.com/PNNL-Comp-Mass-Spec/LipidMiniOn) to create ontology bins and perform lipid enrichment analysis.
 
 [![DOI](https://zenodo.org/badge/144644879.svg)](https://zenodo.org/badge/latestdoi/144644879)
 
@@ -8,7 +8,7 @@ Rodin is an R package used by Lipid Mini-On to create ontology bins and perform 
 
 Written by Geremy Clair for the Department of Energy (PNNL, Richland, WA) \
 E-mail: geremy.clair@pnnl.gov or proteomics@pnnl.gov \
-Website: https://omics.pnl.gov/ or https://panomics.pnnl.gov/
+Website: https://www.pnnl.gov/integrative-omics or https://panomics.pnnl.gov/
 
 ## License
 
