@@ -21,11 +21,13 @@
 clean.lipid.list<-function(X){
   # if the data had more than one column -> remove the data in the other columns
   cleaned<- X
-  if(ncol(cleaned)>0){
+  
+  if(is.data.frame(cleaned)){
+    if(ncol(cleaned)>0){
     cleaned<-as.character(unlist(cleaned[,1]))
     warning("Your lipid list format was inappropriate (it had more than one column)")
     warning("only the first column was kept as lipid identifier for the analysis")
-  }
+  }}
 
   #convert in character vector (if not already)
   if (typeof(cleaned)!="character"){
